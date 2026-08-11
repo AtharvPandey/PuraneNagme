@@ -188,6 +188,59 @@ input[type="range"]::-moz-range-thumb {
 .animate-needle-glow { animation: needle-glow 1.6s ease-in-out infinite; }
 .animate-rise-fade-in { animation: rise-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+@keyframes scene-kenburns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1%, -1%); }
+}
+@keyframes scene-fly {
+  0% { transform: translateX(-10vw) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(110vw) translateY(-30px); opacity: 0; }
+}
+@keyframes scene-fly-2 {
+  0% { transform: translateX(-10vw) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(110vw) translateY(20px); opacity: 0; }
+}
+@keyframes scene-sway {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+@keyframes scene-bulb-twinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+@keyframes scene-sign-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+@keyframes scene-dust-drift {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(-90px) translateX(20px); opacity: 0; }
+}
+
+.scene-kenburns {
+  animation: scene-kenburns 24s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+.scene-birds { animation: scene-fly 26s linear infinite; }
+.scene-birds-2 { animation: scene-fly-2 34s linear infinite 6s; }
+.scene-tree { animation: scene-sway 6s ease-in-out infinite; transform-origin: bottom center; }
+.scene-bulbs circle { animation: scene-bulb-twinkle 2.4s ease-in-out infinite; }
+.scene-bulbs circle:nth-child(odd) { animation-delay: 0.6s; }
+.scene-bulbs circle:nth-child(3n) { animation-delay: 1.2s; }
+.scene-sign-glow { animation: scene-sign-pulse 3.5s ease-in-out infinite; }
+.scene-dust { animation: scene-dust-drift linear infinite; }
+
+.scene-paused,
+.scene-paused * {
+  animation-play-state: paused !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

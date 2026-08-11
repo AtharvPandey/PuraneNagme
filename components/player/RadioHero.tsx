@@ -6,16 +6,18 @@ import { usePlayer } from "@/context/PlayerContext";
 import { useCurrentStation } from "@/hooks/useCurrentStation";
 import { getAllPlaylists, getSongsForPlaylist, formatDuration } from "@/lib/songs";
 import { youtubeThumbnail, cn } from "@/lib/utils";
-import Link from "next/link";
+import { SceneBackground } from "@/components/layout/SceneBackground";
+
+const TAGLINE = "कुछ गाने कभी पुराने नहीं होते";
 
 export function RadioHero() {
   const player = usePlayer();
   const currentStation = useCurrentStation();
   const [selectedSlug, setSelectedSlug] = useState(currentStation.slug);
+  const [ambience, setAmbience] = useState(true);
   const stations = getAllPlaylists();
   const initialised = useRef(false);
 
-  // Load (but don't autoplay) the current station's queue on first mount
   useEffect(() => {
     if (initialised.current) return;
     initialised.current = true;
@@ -28,7 +30,8 @@ export function RadioHero() {
 
   const song = player.currentSong;
   const activeSlug = player.state.activeStationSlug ?? selectedSlug;
-  const activeStation = stations.find((s) => s.slug === activeSlug) ?? currentStation;
+  const activeIndex = Math.max(0, stations.findIndex((s) => s.slug === activeSlug));
+  const activeStation = stations[activeIndex] ?? currentStation;
 
   function selectStation(slug: string) {
     setSelectedSlug(slug);
@@ -36,190 +39,237 @@ export function RadioHero() {
     if (songs.length > 0) player.playQueue(songs, 0, slug);
   }
 
+  function goToOffset(offset: number) {
+    const nextIndex = (activeIndex + offset + stations.length) % stations.length;
+    selectStation(stations[nextIndex].slug);
+  }
+
   return (
-    <section className="relative mx-auto flex max-w-xl flex-col items-center px-4 pt-10 sm:pt-16">
-      {/* Station badge */}
+    <section
+      className="relative w-full overflow-hidden"
+      style={{ minHeight: "calc(100svh - 64px)" }}
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={activeStation.slug}
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.3 }}
-          className="mb-6 flex items-center gap-2 rounded-full border border-border-strong bg-amber/10 px-4 py-1.5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className="absolute inset-0"
         >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-          </span>
-          <span className="font-hindi text-xs tracking-wide text-amber">
-            {activeStation.nameHi}
-          </span>
-          <span className="text-[10px] uppercase tracking-widest text-text-muted">
-            live
-          </span>
+          <SceneBackground
+            accentFrom={activeStation.gradientFrom}
+            accentTo={activeStation.gradientTo}
+            paused={!ambience}
+          />
         </motion.div>
       </AnimatePresence>
 
-      {/* Vinyl + player card */}
-      <div className="relative w-full rounded-[28px] border border-border-hairline bg-gradient-to-b from-bg-surface-2/80 to-bg-surface/90 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-sm sm:p-8">
-        {/* Inner glow */}
-        <div
-          className="pointer-events-none absolute inset-0 rounded-[28px] opacity-60"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(232,168,56,0.08), transparent 70%)",
-          }}
-        />
-
-        {/* Vinyl disc */}
-        <div className="relative mx-auto mb-6 flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56">
-          {/* Glow behind disc when playing */}
-          <div
-            className={cn(
-              "absolute inset-0 rounded-full blur-2xl transition-opacity duration-700",
-              player.state.isPlaying ? "opacity-60" : "opacity-0"
-            )}
-            style={{ background: "radial-gradient(circle, var(--amber), transparent 70%)" }}
-          />
-          <motion.div
-            animate={player.state.isPlaying ? { rotate: 360 } : {}}
-            transition={
-              player.state.isPlaying
-                ? { repeat: Infinity, duration: 4, ease: "linear" }
-                : { duration: 0.3 }
-            }
-            className="relative h-full w-full rounded-full border-[6px] border-bg-elevated shadow-[0_0_0_1px_rgba(232,168,56,0.15),inset_0_0_30px_rgba(0,0,0,0.5)]"
-            style={{
-              background:
-                "repeating-radial-gradient(circle, #1D140E 0px, #1D140E 2px, #241A12 3px, #1D140E 4px)",
-            }}
-          >
-            {/* Center label with thumbnail */}
-            <div className="absolute left-1/2 top-1/2 h-[62%] w-[62%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-2 border-bg-base/80">
-              {song ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={youtubeThumbnail(song.youtubeId)}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-bg-elevated text-amber/40">
-                  <RadioGlyph />
-                </div>
-              )}
-            </div>
-            {/* Spindle hole */}
-            <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-base shadow-inner" />
-          </motion.div>
-        </div>
-
-        {/* Now playing LCD display */}
-        <div className="relative mb-6 rounded-xl border border-border-hairline bg-bg-base/60 px-4 py-3 text-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={song?.id ?? "empty"}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-            >
-              {song ? (
-                <>
-                  <p className="truncate font-hindi text-lg text-amber sm:text-xl">
-                    {song.titleHi}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-text-secondary">
-                    {song.singers.join(", ")}
-                  </p>
-                  <p className="mt-0.5 truncate text-[11px] text-text-muted">
-                    {song.film} · {song.year}
-                  </p>
-                </>
-              ) : (
-                <p className="py-1 text-sm text-text-muted">Choose a station to begin</p>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mb-5">
-          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-bg-elevated">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-amber to-terracotta"
-              animate={{
-                width: player.state.duration
-                  ? `${(player.state.progress / player.state.duration) * 100}%`
-                  : "0%",
-              }}
-              transition={{ ease: "linear", duration: 0.4 }}
-            />
-          </div>
-          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-text-muted">
-            <span>{formatDuration(player.state.progress)}</span>
-            <span>{formatDuration(player.state.duration || song?.durationSeconds)}</span>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-3 sm:gap-4">
-          <ControlButton onClick={player.toggleShuffle} active={player.state.shuffle} label="Shuffle">
-            <ShuffleIcon />
-          </ControlButton>
-          <ControlButton onClick={player.prev} label="Previous">
-            <PrevIcon />
-          </ControlButton>
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            onClick={player.togglePlay}
-            aria-label={player.state.isPlaying ? "Pause" : "Play"}
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber to-terracotta text-bg-base shadow-[0_8px_30px_-6px_rgba(232,168,56,0.5)] transition-shadow hover:shadow-[0_8px_40px_-4px_rgba(232,168,56,0.7)] sm:h-[72px] sm:w-[72px]"
-          >
-            {player.state.isPlaying ? <PauseIcon /> : <PlayIcon />}
-          </motion.button>
-          <ControlButton onClick={player.next} label="Next">
-            <NextIcon />
-          </ControlButton>
-          <ControlButton
-            onClick={player.cycleRepeat}
-            active={player.state.repeat !== "off"}
-            label="Repeat"
-          >
-            <RepeatIcon mode={player.state.repeat} />
-          </ControlButton>
-        </div>
-      </div>
-
-      {/* Station dial — horizontal scroll of pills */}
-      <div className="mt-6 flex w-full snap-x gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+      {/* Station tabs — top right, film-poster style */}
+      <nav
+        aria-label="Stations"
+        className="absolute right-4 top-5 z-10 flex gap-4 overflow-x-auto sm:right-8 sm:top-7 sm:gap-6"
+        style={{ scrollbarWidth: "none" }}
+      >
         {stations.map((s) => (
           <button
             key={s.slug}
             onClick={() => selectStation(s.slug)}
             className={cn(
-              "flex-shrink-0 snap-start rounded-full border px-4 py-2 font-hindi text-sm transition-all",
+              "flex-shrink-0 whitespace-nowrap border-b pb-1 text-[10px] uppercase tracking-[0.18em] transition-colors sm:text-[11px]",
               activeSlug === s.slug
-                ? "border-amber bg-amber/15 text-amber"
-                : "border-border-hairline text-text-secondary hover:border-border-strong hover:text-text-primary"
+                ? "border-amber text-amber"
+                : "border-transparent text-white/55 hover:text-white/85"
             )}
           >
-            {s.nameHi}
+            {s.nameEn}
           </button>
         ))}
+      </nav>
+
+      {/* Bottom content stack — headline, player card, navigator — all in one
+          flex column so heights compose naturally instead of colliding via
+          hand-tuned pixel offsets. Bottom padding clears the fixed mobile
+          nav + persistent bottom player. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-4 px-4 pb-[168px] sm:gap-5 sm:px-10 sm:pb-28">
+        {/* Eyebrow + headline block */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStation.slug}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4 }}
+            className="max-w-lg"
+          >
+            <p className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-amber/90">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber" />
+              </span>
+              {song ? `A memory from ${song.year}` : "Tune in"}
+            </p>
+            <h1 className="mt-3 font-display-hindi text-4xl leading-tight text-white drop-shadow-lg sm:text-6xl">
+              {activeStation.nameHi}
+            </h1>
+            <p className="font-hindi mt-2 text-sm text-white/70 sm:text-base">{TAGLINE}</p>
+            <p className="mt-2 hidden max-w-md text-xs text-white/60 sm:block sm:text-sm">
+              {activeStation.description}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Floating player card + ambience toggle */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="rounded-2xl border border-white/10 bg-black/45 p-3 shadow-2xl backdrop-blur-md sm:w-[380px]">
+          <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/50">
+            <LiveDot />
+            {activeStation.nameEn} radio
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-bg-elevated">
+              {song ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={youtubeThumbnail(song.youtubeId)} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-amber/40">
+                  <DiscIcon />
+                </div>
+              )}
+              {player.state.isPlaying && (
+                <div className="absolute inset-0 flex items-end justify-center gap-[2px] bg-black/30 pb-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-[2.5px] origin-bottom rounded-full bg-amber"
+                      style={{
+                        height: 9,
+                        animation: `eq-bar ${0.7 + i * 0.15}s ease-in-out infinite`,
+                        animationDelay: `${i * 0.1}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {song ? song.titleHi : "Choose a memory"}
+              </p>
+              <p className="truncate text-xs text-white/55">
+                {song ? `${song.singers.join(", ")} · ${song.film}` : "Pick a station to begin"}
+              </p>
+            </div>
+
+            <button
+              onClick={player.togglePlay}
+              aria-label={player.state.isPlaying ? "Pause" : "Play"}
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber to-terracotta text-bg-base shadow-lg"
+            >
+              {player.state.isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
+          </div>
+
+          {/* Progress */}
+          <div className="mt-3">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber to-terracotta transition-[width] duration-500"
+                style={{
+                  width: player.state.duration
+                    ? `${(player.state.progress / player.state.duration) * 100}%`
+                    : "0%",
+                }}
+              />
+            </div>
+            <div className="mt-1 flex justify-between font-mono text-[10px] text-white/40">
+              <span>{formatDuration(player.state.progress)}</span>
+              <span>{formatDuration(player.state.duration || song?.durationSeconds)}</span>
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <MiniButton onClick={player.prev} label="Previous song">
+                <PrevIcon />
+              </MiniButton>
+              <MiniButton onClick={player.next} label="Next song">
+                <NextIcon />
+              </MiniButton>
+              <MiniButton onClick={player.toggleShuffle} label="Shuffle" active={player.state.shuffle}>
+                <ShuffleIcon />
+              </MiniButton>
+            </div>
+            {song && (
+              <a
+                href={`https://www.youtube.com/watch?v=${song.youtubeId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-white/45 underline-offset-2 hover:text-amber hover:underline"
+              >
+                Watch on YouTube ↗
+              </a>
+            )}
+          </div>
+        </div>
+
+          {/* Ambience toggle */}
+          <button
+            onClick={() => setAmbience((v) => !v)}
+            className="flex items-center gap-1.5 self-start rounded-full border border-white/15 bg-black/40 px-3 py-1.5 text-[11px] text-white/70 backdrop-blur-md transition-colors hover:text-white sm:self-auto"
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", ambience ? "bg-success" : "bg-white/30")} />
+            Ambience {ambience ? "on" : "off"}
+          </button>
+        </div>
+
+        {/* Memory navigator */}
+        <div className="flex items-center justify-center gap-4 sm:gap-8">
+          <button
+            onClick={() => goToOffset(-1)}
+            className="flex items-center gap-1.5 text-[11px] text-white/55 transition-colors hover:text-amber sm:text-xs"
+          >
+            <ChevronLeft />
+            <span className="hidden sm:inline">Previous memory</span>
+          </button>
+          <div className="flex items-center gap-1.5">
+            {stations.map((s, i) => (
+              <button
+                key={s.slug}
+                onClick={() => selectStation(s.slug)}
+                aria-label={`Go to ${s.nameEn}`}
+                className={cn(
+                  "h-1 rounded-full transition-all",
+                  i === activeIndex ? "w-5 bg-amber" : "w-1 bg-white/30 hover:bg-white/50"
+                )}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => goToOffset(1)}
+            className="flex items-center gap-1.5 text-[11px] text-white/55 transition-colors hover:text-amber sm:text-xs"
+          >
+            <span className="hidden sm:inline">Next memory</span>
+            <ChevronRight />
+          </button>
+        </div>
       </div>
-      <Link
-        href="/stations"
-        className="mt-3 text-xs text-text-muted underline-offset-4 hover:text-amber hover:underline"
-      >
-        See all stations →
-      </Link>
     </section>
   );
 }
 
-function ControlButton({
+function LiveDot() {
+  return (
+    <span className="relative flex h-1.5 w-1.5">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
+    </span>
+  );
+}
+
+function MiniButton({
   children,
   onClick,
   label,
@@ -231,42 +281,38 @@ function ControlButton({
   active?: boolean;
 }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
+    <button
       onClick={onClick}
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full border transition-colors sm:h-11 sm:w-11",
-        active
-          ? "border-amber bg-amber/15 text-amber"
-          : "border-border-hairline text-text-secondary hover:border-border-strong hover:text-text-primary"
+        "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+        active ? "bg-amber/20 text-amber" : "text-white/60 hover:bg-white/10 hover:text-white"
       )}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 
-function RadioGlyph() {
+function DiscIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="8" cy="14" r="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M13 12h5M13 16h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="2.5" fill="currentColor" />
     </svg>
   );
 }
 function PlayIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M8 5v14l11-7L8 5z" />
     </svg>
   );
 }
 function PauseIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <rect x="6" y="5" width="4" height="14" rx="1" />
       <rect x="14" y="5" width="4" height="14" rx="1" />
     </svg>
@@ -274,7 +320,7 @@ function PauseIcon() {
 }
 function NextIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M6 5v14l9-7-9-7z" />
       <rect x="16" y="5" width="2.5" height="14" rx="1" />
     </svg>
@@ -282,7 +328,7 @@ function NextIcon() {
 }
 function PrevIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M18 5v14l-9-7 9-7z" />
       <rect x="5.5" y="5" width="2.5" height="14" rx="1" />
     </svg>
@@ -290,18 +336,22 @@ function PrevIcon() {
 }
 function ShuffleIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <path d="M3 6h3.5L16 18h4.5M17 15l3.5 3-3.5 3M17 3l3.5 3-3.5 3M3 18h3.5L14 8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-function RepeatIcon({ mode }: { mode: "off" | "all" | "one" }) {
+function ChevronLeft() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M17 2l4 4-4 4M3 11V9a4 4 0 014-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 01-4 4H3" strokeLinecap="round" strokeLinejoin="round" />
-      {mode === "one" && (
-        <text x="12" y="15" fontSize="7" textAnchor="middle" fill="currentColor" stroke="none">1</text>
-      )}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ChevronRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
