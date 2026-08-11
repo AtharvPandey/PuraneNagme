@@ -52,14 +52,15 @@ data/
 
 ## IMPORTANT — about the song data
 
-I seeded `data/songs.json` with **10 real songs with verified YouTube video
-IDs** (Lag Ja Gale, Mere Sapno Ki Rani, Yeh Shaam Mastani, Chura Liya Hai
-Tumne, Chitthi Aayi Hai, Pehla Nasha, Tujhe Dekha To, Mehndi Laga Ke Rakhna,
-Kuch Kuch Hota Hai, Chaiyya Chaiyya) spanning 1964-1998.
+I seeded `data/songs.json` with **27 real songs with verified YouTube video
+IDs**, spanning 1949-2003 across 18 different singers (Lata Mangeshkar,
+Mohammed Rafi, Kishore Kumar, Mukesh, Asha Bhosle, Kumar Sanu, Udit Narayan,
+Alka Yagnik, Sonu Nigam, K.K., and more). Every station now carries 4-5
+real songs instead of 2-4.
 
-I did **not** fabricate YouTube IDs for the remaining ~290 songs you want —
+I did **not** fabricate YouTube IDs for the remaining ~270 songs you want —
 a wrong or made-up video ID is worse than no song at all, since it breaks
-playback silently. Scaling the catalogue to 300 is a content task, and
+playback silently. Scaling the catalogue further is a content task, and
 there are two ways to do it:
 
 **Option A - I do it with you, in batches.** Give me a list of song
