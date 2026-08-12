@@ -7,6 +7,8 @@ import { useCurrentStation } from "@/hooks/useCurrentStation";
 import { getAllPlaylists, getSongsForPlaylist, formatDuration } from "@/lib/songs";
 import { youtubeThumbnail, cn } from "@/lib/utils";
 import { SceneBackground } from "@/components/layout/SceneBackground";
+import { TuningDial } from "@/components/player/TuningDial";
+import { VolumeKnob } from "@/components/player/VolumeKnob";
 
 const TAGLINE = "कुछ गाने कभी पुराने नहीं होते";
 
@@ -67,26 +69,12 @@ export function RadioHero() {
       </AnimatePresence>
 
       {/* Station tabs — top right, film-poster style */}
-      <nav
-        aria-label="Stations"
-        className="absolute right-4 top-5 z-10 flex gap-4 overflow-x-auto sm:right-8 sm:top-7 sm:gap-6"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {stations.map((s) => (
-          <button
-            key={s.slug}
-            onClick={() => selectStation(s.slug)}
-            className={cn(
-              "flex-shrink-0 whitespace-nowrap border-b pb-1 text-[10px] uppercase tracking-[0.18em] transition-colors sm:text-[11px]",
-              activeSlug === s.slug
-                ? "border-amber text-amber"
-                : "border-transparent text-white/55 hover:text-white/85"
-            )}
-          >
-            {s.nameEn}
-          </button>
-        ))}
-      </nav>
+      <TuningDial
+        stations={stations}
+        activeSlug={activeSlug}
+        onSelect={selectStation}
+        className="absolute right-4 top-5 z-10 sm:right-8 sm:top-7"
+      />
 
       {/* Bottom content stack — headline, player card, navigator — all in one
           flex column so heights compose naturally instead of colliding via
@@ -190,7 +178,7 @@ export function RadioHero() {
             </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-between">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-y-2">
             <div className="flex items-center gap-1">
               <MiniButton onClick={player.prev} label="Previous song">
                 <PrevIcon />
@@ -202,6 +190,13 @@ export function RadioHero() {
                 <ShuffleIcon />
               </MiniButton>
             </div>
+            <VolumeKnob
+              value={player.state.volume}
+              muted={player.state.isMuted}
+              onChange={player.setVolume}
+              onToggleMute={player.toggleMute}
+              className="hidden sm:flex"
+            />
             {song && (
               <a
                 href={`https://www.youtube.com/watch?v=${song.youtubeId}`}
